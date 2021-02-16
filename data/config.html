@@ -21,10 +21,32 @@
 			border: 3px solid gray;
 			border-radius: 10px;
 		}
+        .slider {
+          -webkit-appearance: none;
+          width: 100%;
+          height: 16px;
+          background: #fffffff;
+          outline: none;
+          opacity: 0.8;
+          -webkit-transition: .2s;
+          transition: opacity .2s;
+        }
+
+        .slider:hover {
+          opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          background: #0075FF;
+          cursor: pointer;
+        }
 	</style>
 	<script type="application/javascript">
 		var Socket;
-		//var data = '{"brightness" : 100,"leds" : ["#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF"]}';
 		
 		function init() {
 			Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
@@ -35,18 +57,9 @@
 				for (var e of document.getElementsByClassName("brightness")) {
 					e.value = dataJson["brightness"];
 				}
-				document.getElementById("leds").innerHTML = 'Colors : ';
-				var index = 0;
-				for(var color of dataJson["leds"]) {
-					var x = document.createElement("INPUT");
-					x.setAttribute("type", "color");
-					x.setAttribute("class", "led");
-					x.setAttribute("id", "led" + index);
-					x.setAttribute("value", color);
-					x.setAttribute("onchange", "sendData(this)");
-					document.getElementById("leds").appendChild(x);
-					index++;
-				}
+				document.getElementById("color").value = dataJson["color"];
+                document.getElementById("led_index").max = dataJson["led_nb"];
+                document.getElementById("led_index").value = dataJson["led_index"];
 			}
 		}
 		  	
@@ -57,11 +70,9 @@
 				}
 			}
 			var obj = {};
-			obj[objectCalling.className] = objectCalling.value;
-			if(objectCalling.id.startsWith("led"))
-				obj["index"] = parseInt(objectCalling.id.substring(3));
+			obj[objectCalling.id] = objectCalling.value;
 			var configJson = JSON.stringify(obj);
-			//console.log("send config : " + configJson);
+			console.log("send config : " + configJson);
 			Socket.send(configJson);
 		}
 	</script>
@@ -69,10 +80,13 @@
 <body onload="javascript:init()">
 	<div class="box">
 		<p>Brightness : 
-			<input class="brightness" type="number" value="1" min="1" max="255" onchange="sendData(this)">
-			<input class="brightness" type="range" value="1" min="1" max="255" onchange="sendData(this)" style="width:100%">
+			<input class="brightness" id="brightness" type="number" value="1" min="1" max="255" onchange="sendData(this)"/>
+			<input class="brightness" id="brightness" type="range" value="1" min="1" max="255" onchange="sendData(this)" style="width:100%"/>
 		</p>
-		<p id="leds">Colors : </p>
+		<p>Color : <input id="color" type="color" value="#FFFFFF" onchange="sendData(this)"/></p>
+        <p>Dot position : 
+            <input type="range" min="1" max="100" value="50" class="slider" id="led_index" oninput="sendData(this)" style="width:100%">
+        </p>
 	</div>
 </body>
 </html>

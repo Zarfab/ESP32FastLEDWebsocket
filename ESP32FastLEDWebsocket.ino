@@ -1,4 +1,3 @@
-ignore changes on single file
 #include <WiFi.h>
 #include "WifiCredentials.h"
 #include <WiFiMulti.h>
@@ -23,6 +22,7 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 CRGB leds[NUM_LEDS];
 uint8_t ledBrightness = 96;
 int currentLedIndex = 0;
+CRGB currentColor = CRGB::Chartreuse;
 
 
 /**************************************************************************/
@@ -43,10 +43,10 @@ void setup() {
   Serial.println("Connecting Wifi...");
   for(int i = 0; i < NB_WIFI_NETWORKS; i++) {
     Serial.printf("Add WiFi network (SSID : %s)\n", WIFI_SSIDS[i].c_str());
-    WiFiMulti.addAP(WIFI_SSIDS[i].c_str(), WIFI_PWDS[i].c_str());
+    wifiMulti.addAP(WIFI_SSIDS[i].c_str(), WIFI_PWDS[i].c_str());
   }
   int i = 0;
-  while (WiFiMulti.run() != WL_CONNECTED) {
+  while (wifiMulti.run() != WL_CONNECTED) {
     Serial.print(".");
     delay(500);
     i++;
@@ -54,7 +54,7 @@ void setup() {
       ESP.restart();
     }
   }
-  Serial.printf("WiFi connected, IP address: %s\n", WiFi.localIP().toString().c_str());
+  Serial.printf("Connected to %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 
 
   server.onNotFound([](){
@@ -70,6 +70,9 @@ void setup() {
 void loop() {
   webSocket.loop();
   server.handleClient();
+
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  leds[currentLedIndex] = currentColor;
   FastLED.show();
 }
 
@@ -146,10 +149,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
                 ledBrightness = brightness;
                 FastLED.setBrightness(ledBrightness);
               }
-              const char* ledColor = doc["led"];
-              int ledIndex = doc["index"];
+              const char* ledColor = doc["color"];
               if(ledColor != nullptr) {
-                leds[ledIndex] = (int) strtol(ledColor + 1, NULL, 16);
+                currentColor = (CRGB) strtol(ledColor + 1, NULL, 16);
+              }
+              int ledIndex = doc["led_index"];
+              if(ledIndex > 0) {
+                currentLedIndex = ledIndex - 1;
               }
             }
             break;
@@ -163,10 +169,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 String getJSONCurrentConfig() {
   StaticJsonDocument<400> doc;
   doc["brightness"] = ledBrightness;
-  JsonArray ledsArray = doc.createNestedArray("leds");
-  for(int i = 0; i < NUM_LEDS; i++) {
-    ledsArray.add(crgbToHtmlString(leds[i]));
-  }
+  doc["color"] = crgbToHtmlString(currentColor);
+  doc["led_nb"] = NUM_LEDS;
+  doc["led_index"] = currentLedIndex + 1;
   String jsonStr;
   serializeJson(doc, jsonStr);
   return jsonStr;
