@@ -1,0 +1,17 @@
+{
+	"brightness" : 100,
+	"leds" : [
+		"#FFFFFF",
+		"#FFFFFF",
+		"#FFFFFF",
+		"#FFFFFF",
+		"#FFFFFF",
+		"#FFFFFF",
+		"#FFFFFF",
+		"#FFFFFF",
+		"#FFFFFF",
+		"#FFFFFF",
+		"#FFFFFF",
+		"#FFFFFF"
+	]
+}

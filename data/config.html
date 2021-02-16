@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>	
+	<title>Configuration - FastLED</title>
+	<meta charset="UTF-8">
+	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+	<style> 
+		body {
+			background-color: #202020;
+			color: white;
+			font-family:"Lucida Console", Monaco, monospace;
+		}
+		.box{
+			max-width:1200px;
+			min-width:600px;
+			margin:auto;
+			margin-top:24px;
+			margin-bottom:24px;
+			padding:12px;
+			background:black;
+			border: 3px solid gray;
+			border-radius: 10px;
+		}
+	</style>
+	<script type="application/javascript">
+		var Socket;
+		//var data = '{"brightness" : 100,"leds" : ["#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF","#FFFFFF"]}';
+		
+		function init() {
+			Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
+			Socket.onmessage = function(event){
+				//console.log("received data : " + event.data);
+				var dataJson = JSON.parse(event.data);
+				//var dataJson = JSON.parse(data);
+				for (var e of document.getElementsByClassName("brightness")) {
+					e.value = dataJson["brightness"];
+				}
+				document.getElementById("leds").innerHTML = 'Colors : ';
+				var index = 0;
+				for(var color of dataJson["leds"]) {
+					var x = document.createElement("INPUT");
+					x.setAttribute("type", "color");
+					x.setAttribute("class", "led");
+					x.setAttribute("id", "led" + index);
+					x.setAttribute("value", color);
+					x.setAttribute("onchange", "sendData(this)");
+					document.getElementById("leds").appendChild(x);
+					index++;
+				}
+			}
+		}
+		  	
+		function sendData(objectCalling) {
+			if(objectCalling.className == "brightness") {
+				for (var e of document.getElementsByClassName("brightness")) {
+					e.value = objectCalling.value;
+				}
+			}
+			var obj = {};
+			obj[objectCalling.className] = objectCalling.value;
+			if(objectCalling.id.startsWith("led"))
+				obj["index"] = parseInt(objectCalling.id.substring(3));
+			var configJson = JSON.stringify(obj);
+			//console.log("send config : " + configJson);
+			Socket.send(configJson);
+		}
+	</script>
+</head>
+<body onload="javascript:init()">
+	<div class="box">
+		<p>Brightness : 
+			<input class="brightness" type="number" value="1" min="1" max="255" onchange="sendData(this)">
+			<input class="brightness" type="range" value="1" min="1" max="255" onchange="sendData(this)" style="width:100%">
+		</p>
+		<p id="leds">Colors : </p>
+	</div>
+</body>
+</html>
